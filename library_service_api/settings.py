@@ -111,6 +111,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+AUTH_USER_MODEL = "user.User"
+
 INTERNAL_IPS = ["127.0.0.1"]
 
 REST_FRAMEWORK = {
