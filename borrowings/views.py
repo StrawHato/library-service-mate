@@ -1,4 +1,5 @@
 from rest_framework import viewsets, mixins
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 
 from borrowings.models import Borrowing
@@ -7,6 +8,11 @@ from borrowings.serializers import (
     BorrowingCreateSerializer
 )
 
+
+class BorrowingPagination(PageNumberPagination):
+    page_size = 5
+    max_page_size = 10
+    page_size_query_param = "page_size"
 
 class BorrowingsViewSet(
     mixins.CreateModelMixin,
@@ -17,6 +23,7 @@ class BorrowingsViewSet(
     queryset = Borrowing.objects.all()
     serializer_class = BorrowingReadSerializer
     permission_classes = (IsAuthenticated,)
+    pagination_class = BorrowingPagination
 
     def get_queryset(self):
         user = self.request.user
