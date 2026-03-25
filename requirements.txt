@@ -1,0 +1,7 @@
+django
+django-debug-toolbar
+djangorestframework
+djangorestframework-simplejwt
+drf-spectacular
+python-dotenv
+psycopg2-binary
