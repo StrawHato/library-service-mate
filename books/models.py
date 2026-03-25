@@ -13,7 +13,7 @@ class Book(models.Model):
         choices=CoverChoices.choices
     )
     inventory = models.PositiveIntegerField()
-    daily_fee = models.DecimalField(max_digits=6, decimal_places=3)
+    daily_fee = models.DecimalField(max_digits=6, decimal_places=2)
 
     def __str__(self):
         return f"{self.author} - {self.title}"
