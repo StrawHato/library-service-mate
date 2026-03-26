@@ -1,6 +1,14 @@
+from decimal import Decimal
+
 from django.db import models
 
 from borrowings.models import Borrowing
+
+
+def calculate_money(borrowing) -> Decimal:
+    days = (borrowing.expected_return_date - borrowing.borrow_date).days
+    return Decimal(days) * borrowing.book.daily_fee
+
 
 class Payment(models.Model):
     class StatusChoices(models.TextChoices):
