@@ -30,11 +30,25 @@ class BorrowingsViewSet(
     pagination_class = BorrowingPagination
 
     def get_queryset(self):
+        queryset = self.queryset
         user = self.request.user
-        if not user.is_staff:
-            return self.queryset.filter(user=user)
 
-        return self.queryset
+        if not user.is_staff:
+            queryset = queryset.filter(user=user)
+
+        is_active = self.request.query_params.get("is_active")
+        user_id = self.request.query_params.get("user_id")
+
+        if user_id and user.is_staff:
+            queryset = self.queryset.filter(user__id=user_id)
+
+        if is_active:
+            if is_active.lower() == "true":
+                queryset = queryset.filter(actual_return_date__isnull=True)
+            elif is_active.lower() == "false":
+                queryset = queryset.filter(actual_return_date__isnull=False)
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "create":
