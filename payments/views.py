@@ -44,6 +44,7 @@ class PaymentsViewSet(viewsets.ReadOnlyModelViewSet):
         """
         return super(PaymentsViewSet, self).list(request, *args, **kwargs)
 
+
 @extend_schema(
     responses={
         200: OpenApiResponse(
