@@ -1,4 +1,6 @@
 import stripe
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -25,6 +27,22 @@ class PaymentsViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(borrowing__user__id=user_id)
 
         return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="user_id",
+                type=OpenApiTypes.NUMBER,
+                description="Filter by user ID. Works only for admin users(ex. ?user_id=1)",
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """
+        Returns list of user payments for non-admin users.
+        Returns filtered list of all users payments for admins.
+        """
+        return super(PaymentsViewSet, self).list(request, *args, **kwargs)
 
 
 class SuccessView(APIView):
