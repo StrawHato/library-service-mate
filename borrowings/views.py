@@ -1,5 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -18,6 +20,7 @@ class BorrowingPagination(PageNumberPagination):
     page_size = 5
     max_page_size = 10
     page_size_query_param = "page_size"
+
 
 class BorrowingsViewSet(
     mixins.CreateModelMixin,
@@ -63,6 +66,10 @@ class BorrowingsViewSet(
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @extend_schema(
+        description="Return a borrowed book. Marks borrowing as returned and creates a fine if overdue.",
+        responses={200: BorrowingReadSerializer}
+    )
     @action(detail=True, methods=["POST"])
     def return_borrowing(self, request, pk=None):
         borrowing = self.get_object()
