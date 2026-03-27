@@ -11,6 +11,7 @@ from borrowings.serializers import (
     BorrowingReadSerializer,
     BorrowingCreateSerializer
 )
+from payments.services import create_fine_checkout_session
 
 
 class BorrowingPagination(PageNumberPagination):
@@ -61,6 +62,7 @@ class BorrowingsViewSet(
     @action(detail=True, methods=["POST"])
     def return_borrowing(self, request, pk=None):
         borrowing = self.get_object()
+
         if borrowing.is_active:
             with transaction.atomic():
                 book = borrowing.book
@@ -71,10 +73,23 @@ class BorrowingsViewSet(
                 borrowing.actual_return_date = timezone.now().date()
                 borrowing.save()
 
+                if borrowing.actual_return_date > borrowing.expected_return_date:
+                    checkout_url = create_fine_checkout_session(borrowing, request)
+                    return Response(
+                        {
+                            "Success": "Borrowed book was returned, "
+                                       "but You returned the book late. "
+                                       "You must pay a fine.",
+                            "checkout_url": checkout_url,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
                 return Response(
                     {"Success": "Borrowed book was returned"},
                     status=status.HTTP_200_OK
                 )
         return Response(
             {"Error": "You can't return a borrowed book twice"},
+            status=status.HTTP_400_BAD_REQUEST
         )
