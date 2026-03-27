@@ -1,5 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -19,13 +21,18 @@ class BorrowingPagination(PageNumberPagination):
     max_page_size = 10
     page_size_query_param = "page_size"
 
+
 class BorrowingsViewSet(
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.ListModelMixin,
     viewsets.GenericViewSet
 ):
-    queryset = Borrowing.objects.all()
+    queryset = (
+        Borrowing.objects
+        .select_related("book", "user")
+        .prefetch_related("payments")
+    )
     serializer_class = BorrowingReadSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = BorrowingPagination
@@ -59,6 +66,10 @@ class BorrowingsViewSet(
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @extend_schema(
+        description="Return a borrowed book. Marks borrowing as returned and creates a fine if overdue.",
+        responses={200: BorrowingReadSerializer}
+    )
     @action(detail=True, methods=["POST"])
     def return_borrowing(self, request, pk=None):
         borrowing = self.get_object()
@@ -93,3 +104,23 @@ class BorrowingsViewSet(
             {"Error": "You can't return a borrowed book twice"},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="is_active",
+                type=OpenApiTypes.STR,
+                description="Filter only by two strings: true or false(ex. ?is_active=true)",
+            ),
+            OpenApiParameter(
+                name="user_id",
+                type=OpenApiTypes.NUMBER,
+                description="Filter by user ID. Works only for admin users(ex. ?user_id=1)",
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """
+        Returns filtered list of borrowings.
+        """
+        return super(BorrowingsViewSet, self).list(request, *args, **kwargs)

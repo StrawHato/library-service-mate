@@ -1,4 +1,6 @@
 import stripe
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -26,12 +28,67 @@ class PaymentsViewSet(viewsets.ReadOnlyModelViewSet):
 
         return queryset
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="user_id",
+                type=OpenApiTypes.NUMBER,
+                description="Filter by user ID. Works only for admin users(ex. ?user_id=1)",
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """
+        Returns list of user payments for non-admin users.
+        Returns filtered list of all users payments for admins.
+        """
+        return super(PaymentsViewSet, self).list(request, *args, **kwargs)
 
+
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Payment successful or already paid"
+        ),
+        400: OpenApiResponse(
+            description="Invalid session or payment not completed"
+        ),
+        403: OpenApiResponse(
+            description="User does not own this payment"
+        ),
+        404: OpenApiResponse(
+            description="Payment not found"
+        ),
+    },
+)
 class SuccessView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        """Handle successful payment"""
+        """
+        Handle successful payment confirmation.
+
+        This endpoint verifies the payment using the provided `session_id` from Stripe.
+        If the payment is confirmed as completed, the payment status is updated to `PAID`.
+
+        Behavior:
+        - If `session_id` is not provided:
+            - Returns an error
+        - If payment does not exist:
+            - Returns 404 error
+        - If the authenticated user is not the owner of the payment:
+            - Returns 403 error
+        - If payment is already marked as PAID:
+            - Returns success message
+        - If Stripe session is not completed:
+            - Returns an error
+        - If payment is successful:
+            - Updates payment status to `PAID`
+            - Returns success message with payment details
+
+        Returns:
+        - Success message with book title and paid amount
+        """
 
         session_id = request.query_params.get("session_id")
         if not session_id:
@@ -85,11 +142,43 @@ class SuccessView(APIView):
         )
 
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Payment was canceled. You can complete it within 24 hours."
+        ),
+        400: OpenApiResponse(
+            description="Invalid session or payment not completed"
+        ),
+        404: OpenApiResponse(
+            description="Payment not found"
+        ),
+    },
+)
 class CancelView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        """Handle cancellation"""
+        """
+        Handle canceled payment session.
+
+        This endpoint is triggered when a payment process is canceled.
+        It retrieves the payment by `session_id` and returns a message along with
+        the original checkout URL so the user can retry the payment.
+
+        Behavior:
+        - If `session_id` is not provided:
+            - Returns an error
+        - If payment does not exist:
+            - Returns 404 error
+        - If payment exists:
+            - Returns cancellation message
+            - Provides `checkout_url` to allow retrying the payment
+
+        Returns:
+        - Message indicating payment was canceled
+        - Checkout URL to complete the payment within the allowed time
+        """
         session_id = request.query_params.get("session_id")
         if not session_id:
             return Response(
