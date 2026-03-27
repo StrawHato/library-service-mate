@@ -5,11 +5,13 @@ from books.models import Book
 from books.serializers import BookSerializer
 from borrowings.models import Borrowing
 from payments.models import Payment
+from payments.serializers import PaymentSerializer
 from payments.services import create_checkout_session
 
 
 class BorrowingReadSerializer(serializers.ModelSerializer):
     book = BookSerializer(read_only=True, many=False)
+    payments = PaymentSerializer(read_only=True, many=True)
 
     class Meta:
         model = Borrowing
@@ -19,6 +21,7 @@ class BorrowingReadSerializer(serializers.ModelSerializer):
             "expected_return_date",
             "actual_return_date",
             "book",
+            "payments",
             "user",
             "is_active"
         )
