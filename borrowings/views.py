@@ -104,3 +104,23 @@ class BorrowingsViewSet(
             {"Error": "You can't return a borrowed book twice"},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="is_active",
+                type=OpenApiTypes.STR,
+                description="Filter only by two strings: true or false(ex. ?is_active=true)",
+            ),
+            OpenApiParameter(
+                name="user_id",
+                type=OpenApiTypes.NUMBER,
+                description="Filter by user ID. Works only for admin users(ex. ?user_id=1)",
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        """
+        Returns filtered list of borrowings.
+        """
+        return super(BorrowingsViewSet, self).list(request, *args, **kwargs)
