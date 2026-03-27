@@ -79,3 +79,36 @@ class SuccessView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+
+class CancelView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        """Handle cancellation"""
+        session_id = request.query_params.get("session_id")
+        if not session_id:
+            return Response(
+                {"detail": "Session id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            payment = Payment.objects.select_related("borrowing__book", "borrowing__user").get(
+                session_id=session_id
+            )
+        except Payment.DoesNotExist:
+            return Response(
+                {"detail": "Payment not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        checkout_url = payment.session_url
+
+        return Response(
+            {
+                "detail": "Payment was canceled. You can complete it within 24 hours.",
+                "checkout_url": checkout_url
+            },
+            status=status.HTTP_200_OK
+        )
