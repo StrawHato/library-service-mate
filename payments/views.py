@@ -141,11 +141,43 @@ class SuccessView(APIView):
         )
 
 
+@extend_schema(
+    responses={
+        200: OpenApiResponse(
+            description="Payment was canceled. You can complete it within 24 hours."
+        ),
+        400: OpenApiResponse(
+            description="Invalid session or payment not completed"
+        ),
+        404: OpenApiResponse(
+            description="Payment not found"
+        ),
+    },
+)
 class CancelView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        """Handle cancellation"""
+        """
+        Handle canceled payment session.
+
+        This endpoint is triggered when a payment process is canceled.
+        It retrieves the payment by `session_id` and returns a message along with
+        the original checkout URL so the user can retry the payment.
+
+        Behavior:
+        - If `session_id` is not provided:
+            - Returns an error
+        - If payment does not exist:
+            - Returns 404 error
+        - If payment exists:
+            - Returns cancellation message
+            - Provides `checkout_url` to allow retrying the payment
+
+        Returns:
+        - Message indicating payment was canceled
+        - Checkout URL to complete the payment within the allowed time
+        """
         session_id = request.query_params.get("session_id")
         if not session_id:
             return Response(
