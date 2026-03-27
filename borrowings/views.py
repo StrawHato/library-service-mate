@@ -25,7 +25,11 @@ class BorrowingsViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet
 ):
-    queryset = Borrowing.objects.all()
+    queryset = (
+        Borrowing.objects
+        .select_related("book", "user")
+        .prefetch_related("payments")
+    )
     serializer_class = BorrowingReadSerializer
     permission_classes = (IsAuthenticated,)
     pagination_class = BorrowingPagination
