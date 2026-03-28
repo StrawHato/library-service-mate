@@ -29,7 +29,7 @@ class Borrowing(models.Model):
             ),
             models.CheckConstraint(
                 condition=Q(actual_return_date__isnull=True) |
-                      Q(actual_return_date__gt=F("borrow_date")),
+                      Q(actual_return_date__gte=F("borrow_date")),
                 name="actual_return_date_valid",
             ),
         ]
