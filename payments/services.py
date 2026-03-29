@@ -44,7 +44,17 @@ def create_checkout_session(borrowing, request):
 
 
 def calculate_fine_amount(borrowing):
+    if not hasattr(borrowing, "expected_return_date"):
+        raise ValueError("Invalid borrowing object passed")
+
+    if not borrowing.actual_return_date:
+        return Decimal("0.00")
+
     days = (borrowing.actual_return_date - borrowing.expected_return_date).days
+
+    if days <= 0:
+        return Decimal("0.00")
+
     fine_multiplier = 2
     return Decimal(fine_multiplier) * Decimal(days) * borrowing.book.daily_fee
 
